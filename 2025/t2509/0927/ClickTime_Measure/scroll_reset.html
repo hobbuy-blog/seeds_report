@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表情アノテーションインターフェース</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- モード選択画面 -->
+        <div id="modeSelection" class="mode-selection-screen">
+            <div class="mode-selection-content">
+                <h1>表情アノテーションシステム</h1>
+                <h2>モードを選択してください</h2>
+                
+                <div class="mode-options">
+                    <div class="mode-card" data-mode="1">
+                        <div class="mode-icon">✏️</div>
+                        <h3>モード1</h3>
+                        <button class="mode-btn" onclick="selectMode(1)">このモードを選択</button>
+                    </div>
+                    
+                    <div class="mode-card" data-mode="2">
+                        <div class="mode-icon">👁️</div>
+                        <h3>モード2</h3>
+                        <button class="mode-btn" onclick="selectMode(2)">このモードを選択</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインコンテンツエリア -->
+        <div id="mainInterface" class="main-content" style="display: none;">
+            <section id="top"><h1 id="systemTitle">表情アノテーションシステム</h1></section>
+            
+            <!-- モード表示 -->
+            <div class="current-mode">
+                <span id="currentModeText">モード1: 新規アノテーション</span>
+            </div>
+            
+            <!-- ローカルCSV読み込み（ブラウザのみ運用モード） -->
+            <div id="localCsvLoader" class="local-csv-loader" style="margin: 12px 0;">
+                <div style="font-weight: 600;">CSVファイルを選択してください (<span id="expectedCsvFormat">Mode1: ID,FilePath,Description</span>)</div>
+                <input type="file" id="csvFileInput" accept=".csv" />
+                <button id="startFromCsvBtn" disabled style="margin-left:8px;">CSV読み込み開始</button>
+                <div id="csvLoadMessage" style="font-size: 0.85em; color:#666; margin-top:4px;">モード選択後に該当形式のCSVを選び、読み込み開始を押してください。</div>
+            </div>
+            <hr style="margin: 10px 0;" />
+            
+            <!-- データ読み込み状況 -->
+            <div class="data-status">
+                <span id="dataStatus">data.csvを読み込み中...</span>
+            </div>
+            
+            <!-- 進捗表示 -->
+            <div class="progress-section">
+                <span id="videoCounter">0 / 0</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            
+            <!-- ビデオ表示エリア -->
+            <div class="video-container">
+                <video id="videoPlayer" controls>
+                    <source id="videoSource" src="" type="video/mp4">
+                    お使いのブラウザはビデオタグをサポートしていません。
+                </video>
+            </div>
+            
+            <!-- 表情選択エリア -->
+            <div class="emotion-selection">
+                <!-- モード2用：既存ラベル表示 -->
+                <div id="existingLabelSection" class="existing-label-display" style="display: none;">
+                    <h3>あなたの前のアノテータの回答：</h3>
+                    <div class="existing-label">
+                        <span class="label-emotion" id="existingLabel">ラベルなし</span>
+                        <span class="label-source" id="labelSource"></span>
+                    </div>
+                </div>
+                
+                <h3>表情を選択してください：</h3>
+                <div class="emotion-grid">
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="angry">
+                        <span class="emotion-label">😠 怒り (Angry)</span>
+                    </label>
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="disgust">
+                        <span class="emotion-label">🤢 嫌悪 (Disgust)</span>
+                    </label>
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="fear">
+                        <span class="emotion-label">😨 恐怖 (Fear)</span>
+                    </label>
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="happy">
+                        <span class="emotion-label">😊 幸福 (Happy)</span>
+                    </label>
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="sad">
+                        <span class="emotion-label">😢 悲しみ (Sad)</span>
+                    </label>
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="surprise">
+                        <span class="emotion-label">😲 驚き (Surprise)</span>
+                    </label>
+                    <label class="emotion-option">
+                        <input type="radio" name="emotion" value="neutral">
+                        <span class="emotion-label">😐 中立 (Neutral)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 操作ボタン -->
+            <div class="control-buttons">
+                <a href="#top"><button id="nextBtn" class="control-btn next-btn">Next</button></a>
+            </div>
+            
+            <!-- 結果ダウンロード -->
+            <div class="download-section">
+                <button id="downloadBtn" class="download-btn">結果をダウンロード</button>
+            </div>
+        </div>
+        
+        <!-- 右側の説明エリア -->
+        <div class="instructions-panel">
+            <h2>Instructions</h2>
+            <div class="instruction-item">
+                <div class="emotion-icon angry">😠</div>
+                <div class="instruction-text">
+                    <strong style="color: #ff4444;">Angry</strong> は強い感情状態で、通常は不快な反応を含みます。怒りのある対象は、<strong style="color: #ff4444;">目と口が開いている場合</strong>に表れます。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #ff4444;">Angry</strong> is a strong emotional state that usually includes discomfort reactions. When an object is angry, it will appear as <strong style="color: #ff4444;">if the eyes and mouth are open.</strong>
+                </div>
+
+            </div>
+            
+            <div class="instruction-item">
+                <div class="emotion-icon disgust">🤢</div>
+                <div class="instruction-text">
+                    <strong style="color: #ff8800;">Disgust</strong> は何かが<strong style="color: #ff8800;">不快または嫌な</strong>ものに対する感情的反応です。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #ff8800;">Disgust</strong> is an emotional response to something that is <strong style="color: #ff8800;">offensive or unpleasant.</strong>
+                </div>
+            </div>
+            
+            <div class="instruction-item">
+                <div class="emotion-icon fear">😨</div>
+                <div class="instruction-text">
+                    <strong style="color: #4488ff;">Fear</strong> は人や動物が現実的または想像上の危険、嫌いなもの等に直面した際の<strong style="color: #4488ff;">パニックと緊急事態</strong>の状態を指します。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #4488ff;">Fear</strong> refers to the state of <strong style="color: #4488ff;">panic and emergency</strong>  caused by people or animals facing real or imagined dangers, things they dislike, etc.
+                </div>
+            </div>
+            
+            <div class="instruction-item">
+                <div class="emotion-icon surprise">😲</div>
+                <div class="instruction-text">
+                    <strong style="color: #00cccc;">Surprise</strong> は人々が<strong style="color: #00cccc;">衝撃的または信じられない</strong>ことを聞いた時に示す表現を指します。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #00cccc;">Surprise</strong> refers to the expression that people show when they hear something <strong style="color: #00cccc;">shocking or unbelievable.</strong>
+                </div>
+            </div>
+            
+            <div class="instruction-item">
+                <div class="emotion-icon happy">😊</div>
+                <div class="instruction-text">
+                    <strong style="color: #88aa00;">Happy</strong> は気分が良い時の感情的反応です。幸福の最も一般的な表現は<strong style="color: #88aa00;">笑い</strong>です。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #88aa00;">Happy</strong> is an emotional response when feeling good. The most common expression of happiness is <strong style="color: #88aa00;">laughter.</strong>
+                </div>
+            </div>
+            
+            <div class="instruction-item">
+                <div class="emotion-icon sad">😢</div>
+                <div class="instruction-text">
+                    <strong style="color: #888800;">Sad</strong> は、負の基本感情として、通常は失敗や損失により引き起こされ、<strong style="color: #888800;">うつ病、憂うつ、孤独感、孤立感</strong>を含みます。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #888800;">Sad</strong>, as a negative basic emotion, usually caused by loss, and  failure, including <strong style="color: #888800;">depression, loneliness, and isolation</strong>.
+               </div>
+            </div>
+            
+            <div class="instruction-item">
+                <div class="emotion-icon neutral">😐</div>
+                <div class="instruction-text">
+                    <strong style="color: #cc44cc;">Neutral</strong>は<strong style="color: #cc44cc;">感情のない</strong>表現です。
+                </div>
+                <div class="instruction-text">
+                    <strong style="color: #cc44cc;">Neutral</strong> expression without <strong style="color: #cc44cc;">any emotions</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
